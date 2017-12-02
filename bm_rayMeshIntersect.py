@@ -78,13 +78,16 @@ def rayMeshIntersect(meshDag, rayOrigin, rayDirection):
     # the index in our triangleVetsArray that we'll use to iterate through it
     vertArrayIndex = 0
 
+    # the smaller this value, the more back faces get ignored (0 is only back faces, -.25 would include grazes)
+    minDotProduct = -.25
+
     # for every polygon in our mesh:
     for i in range(fnMesh.numPolygons()):
         # check if that polygon is facing away from us using its normal vector
         nVector = om.MVector()
         fnMesh.getPolygonNormal(i, nVector, om.MSpace.kWorld)
         # if the dot product of these two vectors is greater than zero then that face is facing away from us
-        if (rayVector * nVector) > 0:
+        if (rayVector * nVector) > minDotProduct:
             # if that's the case then we're going to skip this face and it's iteration through the next for loop
             for j in range(triCountsArray[i]):
                 # properly increase our vertArrayIndex according to the number of triangles we're skipping
@@ -130,8 +133,9 @@ def rayMeshIntersect(meshDag, rayOrigin, rayDirection):
 
         # make a sphere marker just for fun :]
         s = cmds.polySphere(subdivisionsAxis=10, subdivisionsHeight=10, radius=.1, ch=0)
-        cmds.xform(s, t=[closestHitPoint.x, closestHitPoint.y, closestHitPoint.z], ws=1)
+        cmds.xform(s, t=closestHitPoint, ws=1)
         cmds.select(cl=1)
+
 
 """
 import ApiScripts.bm_rayMeshIntersect as rmi
