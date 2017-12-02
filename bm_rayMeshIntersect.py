@@ -56,7 +56,7 @@ def rayMeshIntersect(meshDag, rayOrigin, rayDirection):
     :param meshDag: MDagPath() to the mesh we want to hit
     :param rayOrigin: MVector() represents the start of our ray
     :param rayDirection: MVector() gives our ray a direction
-    :return: om.MPoint() if there is a hit or False if not.
+    :return: MPoint() if there is a hit or False if not.
     """
 
     try:
@@ -117,7 +117,6 @@ def rayMeshIntersect(meshDag, rayOrigin, rayDirection):
         if hit:
             # append that hit to our hitList array for later evaluation
             hitList.append(hit)
-
     # go through each point in our list and find the one with the least distance from our ray origin
     closestLen = float("inf")
     if hitList:
@@ -134,9 +133,9 @@ def rayMeshIntersect(meshDag, rayOrigin, rayDirection):
         cmds.xform(s, t=[closestHitPoint.x, closestHitPoint.y, closestHitPoint.z], ws=1)
         cmds.select(cl=1)
 
-
 """
 import ApiScripts.bm_rayMeshIntersect as rmi
+
 reload(rmi)
 
 sel = om.MSelectionList()
@@ -145,15 +144,14 @@ sel.add("joint1")
 sel.add("joint2")
 
 meshDag = om.MDagPath()
-sel.getDagPath(0,meshDag)
+sel.getDagPath(0, meshDag)
 p0Dag = om.MDagPath()
-sel.getDagPath(1,p0Dag)
+sel.getDagPath(1, p0Dag)
 p1Dag = om.MDagPath()
-sel.getDagPath(2,p1Dag)
+sel.getDagPath(2, p1Dag)
 
 p0Vec = om.MFnTransform(p0Dag).getTranslation(om.MSpace.kWorld)
 p1Vec = om.MFnTransform(p1Dag).getTranslation(om.MSpace.kWorld)
 
-rmi.rayMeshIntersect(meshDag, p0Vec,p1Vec)
-
+rmi.rayMeshIntersect(meshDag, p0Vec, p1Vec)
 """
