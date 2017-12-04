@@ -60,86 +60,85 @@ def rayMeshIntersect(meshDag, rayOrigin, rayDirection):
     """
 
     try:
-        fnMesh = om.MFnMesh(meshDag)
+        itMesh = om.MItMeshPolygon(meshDag)
         rayVector = (rayDirection - rayOrigin)
     except RuntimeError:
         print "RuntimeError: (kInvalidParameter): Object does not exist"
         return
 
-    # empty MIntArray to hold the triCounts (# of triangles per polygon index)
-    triCountsArray = om.MIntArray()
-    # empty MIntArray to hold the vert ids for each triangle
-    triVertsArray = om.MIntArray()
-    # get our mesh's triangles
-    fnMesh.getTriangles(triCountsArray, triVertsArray)
-
-    # iterate through every polygon in our mesh and store the triangle vert locations
-    triVertLocs = []
-    # the index in our triangleVetsArray that we'll use to iterate through it
-    vertArrayIndex = 0
-
-    # the smaller this value, the more back faces get ignored (0 is only back faces, -.25 would include grazes)
+    # the smaller this value, the more back faces get ignored (0 ignores only back faces, -.25 would also ignore grazes)
     minDotProduct = -.25
+    # an array that holds the vertex vectors for each non-culled triangle
+    triVertLocs = []
 
-    # for every polygon in our mesh:
-    for i in range(fnMesh.numPolygons()):
-        # check if that polygon is facing away from us using its normal vector
+    while not itMesh.isDone():
+        # the normal vector for this face
         nVector = om.MVector()
-        fnMesh.getPolygonNormal(i, nVector, om.MSpace.kWorld)
-        # if the dot product of these two vectors is greater than zero then that face is facing away from us
+
+        # check if that polygon is facing away from us using its normal vector
+        itMesh.getNormal(nVector, om.MSpace.kWorld)
         if (rayVector * nVector) > minDotProduct:
-            # if that's the case then we're going to skip this face and it's iteration through the next for loop
-            for j in range(triCountsArray[i]):
-                # properly increase our vertArrayIndex according to the number of triangles we're skipping
-                vertArrayIndex += 3
+            # we'll skip this face in our calculations to save time
+            itMesh.next()
         else:
-            for k in range(triCountsArray[i]):
-                # declare this triangle's points
-                v0 = om.MPoint()
-                v1 = om.MPoint()
-                v2 = om.MPoint()
-                # get the location of each point in world space
-                fnMesh.getPoint(triVertsArray[vertArrayIndex], v0, om.MSpace.kWorld)
-                vertArrayIndex += 1
-                fnMesh.getPoint(triVertsArray[vertArrayIndex], v1, om.MSpace.kWorld)
-                vertArrayIndex += 1
-                fnMesh.getPoint(triVertsArray[vertArrayIndex], v2, om.MSpace.kWorld)
-                vertArrayIndex += 1
-                # append an array of those points to our triVertLocs array
+            # stores the vertex ids for the triangles that make up each face.
+            thisFaceTris = om.MIntArray()
+            # an array that holds the points for each triangle in this face (its length is multiples of 3)
+            thisFaceTriVerts = om.MPointArray()
+            # get the triangles at this face and store them in their proper variables
+            itMesh.getTriangles(thisFaceTriVerts, thisFaceTris, om.MSpace.kWorld)
+            numTris = len(thisFaceTris) / 3
+            i = 0
+            while i < numTris:
+                # make an array of MVectors for each triangle at this face
+                v0 = om.MVector(thisFaceTriVerts[(3 * i) + 0].x,
+                                thisFaceTriVerts[(3 * i) + 0].y,
+                                thisFaceTriVerts[(3 * i) + 0].z)
+                v1 = om.MVector(thisFaceTriVerts[(3 * i) + 1].x,
+                                thisFaceTriVerts[(3 * i) + 1].y,
+                                thisFaceTriVerts[(3 * i) + 1].z)
+                v2 = om.MVector(thisFaceTriVerts[(3 * i) + 2].x,
+                                thisFaceTriVerts[(3 * i) + 2].y,
+                                thisFaceTriVerts[(3 * i) + 2].z)
                 triVertLocs.append([v0, v1, v2])
+                i += 1
+            itMesh.next()
 
     hitList = []
     for tri in triVertLocs:
         # get the points for each triangle as an array and send them to our mtIntersect function to see if they hit
-        v0 = om.MVector(tri[0][0], tri[0][1], tri[0][2])
-        v1 = om.MVector(tri[1][0], tri[1][1], tri[1][2])
-        v2 = om.MVector(tri[2][0], tri[2][1], tri[2][2])
-        hit = mtIntersect(rayOrigin, rayDirection, v0, v1, v2)
+        hit = mtIntersect(rayOrigin, rayDirection, tri[0], tri[1], tri[2])
 
         # if the function returned something other than False:
         if hit:
             # append that hit to our hitList array for later evaluation
             hitList.append(hit)
     # go through each point in our list and find the one with the least distance from our ray origin
+
     closestLen = float("inf")
     if hitList:
         closestHitPoint = hitList[0]
         for hitPoint in hitList:
+            rayHitDist = (rayOrigin - hitPoint).length()
             # using the ray origin as the basis for our distance will give us intersections when p1 is inside the mesh
-            if (rayOrigin - hitPoint).length() < closestLen:
+            if rayHitDist < closestLen:
                 # compare distances. We're trying to find the closest one (again, to avoid back faces)
-                closestLen = (rayOrigin - hitPoint).length()
                 closestHitPoint = hitPoint
 
         # make a sphere marker just for fun :]
         s = cmds.polySphere(subdivisionsAxis=10, subdivisionsHeight=10, radius=.1, ch=0)
         cmds.xform(s, t=closestHitPoint, ws=1)
-        cmds.select(cl=1)
+        return closestHitPoint
+    else:
+        return False
 
 
 """
 import ApiScripts.bm_rayMeshIntersect as rmi
+import maya.OpenMaya as om
+import time
 
+t = time.time()
 reload(rmi)
 
 sel = om.MSelectionList()
@@ -158,4 +157,5 @@ p0Vec = om.MFnTransform(p0Dag).getTranslation(om.MSpace.kWorld)
 p1Vec = om.MFnTransform(p1Dag).getTranslation(om.MSpace.kWorld)
 
 rmi.rayMeshIntersect(meshDag, p0Vec, p1Vec)
+print time.time() - t
 """
