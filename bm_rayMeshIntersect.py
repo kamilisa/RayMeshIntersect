@@ -1,16 +1,28 @@
-import maya.OpenMaya as om
-import maya.cmds as cmds
+try:
+    import maya.OpenMaya as om
+    import maya.cmds as cmds
+except ImportError:
+    pass
 
 
 # The Moeller-Trumbore trianle intersection algorithm translated into Python
 def mtIntersect(p0, p1, v0, v1, v2):
-    """
-    :param p0: MVector(): The start of our raygiven as an MVector
-    :param p1: MVector(): A point on our ray to give it direction
-    :param v0: MVector(): Middle vertex world loc
-    :param v1: MVector(): Second vertex world loc
-    :param v2: MVector(): Third vertex world loc
-    :return: MVector(): Hit point vector or False if none
+    """The Moeller-Trumbore triangle intersection algorithm translated into Python
+
+    :param p0: The start of our raygiven as an MVector
+    :param p1: A point on our ray to give it direction
+    :param v0: Middle vertex world loc
+    :param v1: Second vertex world loc
+    :param v2: Third vertex world loc
+    :type p0: MVector
+    :type p1: MVector
+    :type v0: MVector
+    :type v1: MVector
+    :type v2: MVector
+
+    :return: Hit point vector or False
+    :rtype: MVector, False
+
     """
     # The Moeller Trumbore triangle intersection method
     # Translated from c++ from https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
@@ -52,11 +64,16 @@ def mtIntersect(p0, p1, v0, v1, v2):
 
 # Main method to detect a mesh collision based on a given mesh, rayOrigin object and rayDirection object
 def rayMeshIntersect(meshDag, rayOrigin, rayDirection):
-    """
-    :param meshDag: MDagPath() to the mesh we want to hit
-    :param rayOrigin: MVector() represents the start of our ray
-    :param rayDirection: MVector() gives our ray a direction
-    :return: MPoint() if there is a hit or False if not.
+    """Detect a mesh collision based on a given mesh, rayOrigin object and rayDirection object
+
+    :param meshDag: The mesh we want to hit
+    :param rayOrigin: The start of our ray
+    :param rayDirection: Gives our ray a direction
+    :type meshDag: MDagPath
+    :type rayOrigin: MVector
+    :type rayDirection: MVector
+    :return: Returns a hit point or False if none
+    :rtype: MPoint, False
     """
 
     try:
